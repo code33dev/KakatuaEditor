@@ -30,11 +30,13 @@
 #include <QTextDocument>
 #include <QFontDialog>
 
-class ReplaceWindow : public QWidget {
+class ReplaceWindow : public QWidget
+{
 
 public:
     explicit ReplaceWindow(QPlainTextEdit *editor, QWidget *parent = nullptr)
-        : QWidget(parent), textEditor(editor) {
+        : QWidget(parent), textEditor(editor)
+    {
         setWindowTitle("Replace");
         setWindowFlags(Qt::Window | Qt::WindowStaysOnTopHint); // Independent Window
 
@@ -76,16 +78,20 @@ public:
     }
 
 protected:
-    void closeEvent(QCloseEvent *event) override {
+    void closeEvent(QCloseEvent *event) override
+    {
         delete this; // Destroy window on close
     }
 
 private slots:
-    void replaceText() {
-        if (!textEditor) return;
+    void replaceText()
+    {
+        if (!textEditor)
+            return;
 
         QTextCursor cursor = textEditor->textCursor();
-        if (!cursor.hasSelection()) {
+        if (!cursor.hasSelection())
+        {
             QMessageBox::warning(this, "Replace", "No text selected.");
             return;
         }
@@ -94,23 +100,29 @@ private slots:
         cursor.insertText(replaceStr);
     }
 
-    void replaceAllText() {
-        if (!textEditor) return;
+    void replaceAllText()
+    {
+        if (!textEditor)
+            return;
 
         QString searchText = replaceBox->text();
         QString replaceText = replaceWithBox->text();
-        if (searchText.isEmpty()) return;
+        if (searchText.isEmpty())
+            return;
 
         QTextDocument *doc = textEditor->document();
         QTextCursor cursor(doc);
         cursor.beginEditBlock();
 
         QTextDocument::FindFlags flags;
-        if (caseCheckBox->isChecked()) flags |= QTextDocument::FindCaseSensitively;
+        if (caseCheckBox->isChecked())
+            flags |= QTextDocument::FindCaseSensitively;
 
-        while (!cursor.isNull() && !cursor.atEnd()) {
+        while (!cursor.isNull() && !cursor.atEnd())
+        {
             cursor = doc->find(searchText, cursor, flags);
-            if (!cursor.isNull()) {
+            if (!cursor.isNull())
+            {
                 cursor.insertText(replaceText);
             }
         }
@@ -176,26 +188,42 @@ private slots:
     {
         search(QTextDocument::FindBackward);
     }
+    void closeEvent(QCloseEvent *event) override
+    {
+        removeHighlights(); // 🔄 Unmark all highlights before closing
+        QWidget::closeEvent(event);
+        delete this; // Ensure proper cleanup
+    }
+    void removeHighlights()
+    {
+        if (!textEditor)
+            return;
 
+        QTextDocument *document = textEditor->document();
+        QTextCursor cursor(document);
+
+        // Reset the entire document background
+        cursor.select(QTextCursor::Document);
+        QTextCharFormat defaultFormat;
+        defaultFormat.setBackground(Qt::transparent);
+        cursor.mergeCharFormat(defaultFormat);
+    }
     void highlightAllMatches()
     {
         if (!textEditor)
             return;
 
-        QTextCursor cursor = textEditor->textCursor();
         QTextDocument *document = textEditor->document();
+        QTextCursor highlightCursor(document);
         QTextCharFormat highlightFormat;
         highlightFormat.setBackground(Qt::yellow);
 
-        QTextCursor highlightCursor(document);
-        highlightCursor.beginEditBlock();
-
+        // 🔄 Step 1: Remove Previous Highlights
+        QTextCursor defaultCursor(document);
+        defaultCursor.select(QTextCursor::Document);
         QTextCharFormat defaultFormat;
         defaultFormat.setBackground(Qt::transparent);
-
-        // Clear previous highlights
-        highlightCursor.select(QTextCursor::Document);
-        highlightCursor.setCharFormat(defaultFormat);
+        defaultCursor.mergeCharFormat(defaultFormat);
 
         QString searchText = searchBox->text();
         if (searchText.isEmpty())
@@ -204,19 +232,25 @@ private slots:
         QTextDocument::FindFlags flags;
         if (caseCheckBox->isChecked())
             flags |= QTextDocument::FindCaseSensitively;
-        if (regexCheckBox->isChecked())
-            searchText = QRegularExpression(searchText).pattern();
 
+        bool found = false;
+
+        // 🔍 Step 2: Find All Matches & Apply Highlight
         while (!highlightCursor.isNull() && !highlightCursor.atEnd())
         {
             highlightCursor = document->find(searchText, highlightCursor, flags);
             if (!highlightCursor.isNull())
             {
                 highlightCursor.mergeCharFormat(highlightFormat);
+                found = true;
             }
         }
 
-        highlightCursor.endEditBlock();
+        // 🚨 Step 3: If No Matches Found, Show Warning
+        if (!found)
+        {
+            QMessageBox::information(this, "Find", "No matches found.");
+        }
     }
 
 private:
