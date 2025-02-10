@@ -15,13 +15,12 @@
 #include <QTreeView>
 #include <QFileSystemModel>
 #include <QSplitter>
-#include <QMenu>
 #include <QVBoxLayout>
-class SyntaxHighlighter : public QSyntaxHighlighter
-{
+#include <QTabWidget>
+
+class SyntaxHighlighter : public QSyntaxHighlighter {
 public:
-    SyntaxHighlighter(QTextDocument *parent) : QSyntaxHighlighter(parent)
-    {
+    SyntaxHighlighter(QTextDocument *parent) : QSyntaxHighlighter(parent) {
         QTextCharFormat keywordFormat;
         keywordFormat.setForeground(Qt::blue);
         keywordFormat.setFontWeight(QFont::Bold);
@@ -29,7 +28,8 @@ public:
             "\\bint\\b", "\\bdouble\\b", "\\bfloat\\b", "\\bchar\\b",
             "\\breturn\\b", "\\bvoid\\b", "\\bif\\b", "\\belse\\b",
             "\\bfor\\b", "\\bwhile\\b", "\\bclass\\b", "\\bpublic\\b",
-            "\\bprivate\\b", "\\bprotected\\b", "\\bnamespace\\b"};
+            "\\bprivate\\b", "\\bprotected\\b", "\\bnamespace\\b"
+        };
 
         QTextCharFormat commentFormat;
         commentFormat.setForeground(Qt::darkGreen);
@@ -46,13 +46,10 @@ public:
     }
 
 protected:
-    void highlightBlock(const QString &text) override
-    {
-        for (const HighlightingRule &rule : rules)
-        {
+    void highlightBlock(const QString &text) override {
+        for (const HighlightingRule &rule : rules) {
             QRegularExpressionMatchIterator matchIterator = rule.pattern.globalMatch(text);
-            while (matchIterator.hasNext())
-            {
+            while (matchIterator.hasNext()) {
                 QRegularExpressionMatch match = matchIterator.next();
                 setFormat(match.capturedStart(), match.capturedLength(), rule.format);
             }
@@ -60,17 +57,14 @@ protected:
     }
 
 private:
-    struct HighlightingRule
-    {
+    struct HighlightingRule {
         QRegularExpression pattern;
         QTextCharFormat format;
     };
     QVector<HighlightingRule> rules;
 };
 
-
 class TextEditor : public QMainWindow {
-
 public:
     TextEditor() {
         setWindowTitle("Qt6 Text Editor with Tabs & File Explorer");
@@ -106,33 +100,17 @@ private:
     QTreeView *explorer;
     QFileSystemModel *fileModel;
     QTabWidget *tabWidget;
-    QMap<QString, QWidget *> openTabs;
+    QMap<QString, QPlainTextEdit *> openTabs;
 
     void createMenuBar() {
         QMenuBar *menuBar = new QMenuBar(this);
 
-        // File Menu
         QMenu *fileMenu = menuBar->addMenu("&File");
         fileMenu->addAction("Open Folder", this, &TextEditor::openFolder);
         fileMenu->addAction("Open File", QKeySequence::Open, this, &TextEditor::openFile);
         fileMenu->addAction("Save", QKeySequence::Save, this, &TextEditor::saveCurrentFile);
         fileMenu->addSeparator();
         fileMenu->addAction("Exit", QKeySequence::Quit, qApp, &QApplication::quit);
-
-        // Edit Menu
-        QMenu *editMenu = menuBar->addMenu("&Edit");
-        editMenu->addAction("Select All", QKeySequence::SelectAll, this, &TextEditor::selectAll);
-        editMenu->addAction("Copy", QKeySequence::Copy, this, &TextEditor::copy);
-        editMenu->addAction("Cut", QKeySequence::Cut, this, &TextEditor::cut);
-        editMenu->addAction("Paste", QKeySequence::Paste, this, &TextEditor::paste);
-        editMenu->addSeparator();
-        editMenu->addAction("Undo", QKeySequence::Undo, this, &TextEditor::undo);
-        editMenu->addAction("Redo", QKeySequence::Redo, this, &TextEditor::redo);
-        editMenu->addSeparator();
-        editMenu->addAction("Find", QKeySequence::Find, this, &TextEditor::findText);
-        editMenu->addAction("Replace", QKeySequence::Replace, this, &TextEditor::replaceText);
-        editMenu->addSeparator();
-        editMenu->addAction("Go to Line", QKeySequence(Qt::CTRL | Qt::Key_F12), this, &TextEditor::goToLine);
 
         setMenuBar(menuBar);
     }
@@ -172,30 +150,22 @@ private:
         }
 
         QTextStream in(&file);
-        QWidget *container = new QWidget();
-        QVBoxLayout *layout = new QVBoxLayout(container);
-        layout->setContentsMargins(0, 0, 0, 0);
-
-        QPlainTextEdit *editor = new QPlainTextEdit(container);
+        QPlainTextEdit *editor = new QPlainTextEdit();
         editor->setPlainText(in.readAll());
         editor->setProperty("filePath", filePath);
         editor->setLineWrapMode(QPlainTextEdit::NoWrap);
-
-        layout->addWidget(editor);
+        new SyntaxHighlighter(editor->document()); // Apply syntax highlighting
         file.close();
 
-        int tabIndex = tabWidget->addTab(container, QFileInfo(filePath).fileName());
+        int tabIndex = tabWidget->addTab(editor, QFileInfo(filePath).fileName());
         tabWidget->setTabToolTip(tabIndex, filePath);
         tabWidget->setCurrentIndex(tabIndex);
 
-        openTabs[filePath] = container;
+        openTabs[filePath] = editor;
     }
 
     void saveCurrentFile() {
-        QWidget *currentTab = tabWidget->currentWidget();
-        if (!currentTab) return;
-
-        QPlainTextEdit *editor = currentTab->findChild<QPlainTextEdit *>();
+        QPlainTextEdit *editor = getCurrentEditor();
         if (!editor) return;
 
         QString filePath = editor->property("filePath").toString();
@@ -223,76 +193,13 @@ private:
         tab->deleteLater();
     }
 
-    void goToLine() {
-        QWidget *currentTab = tabWidget->currentWidget();
-        if (!currentTab) return;
-
-        QPlainTextEdit *editor = currentTab->findChild<QPlainTextEdit *>();
-        if (!editor) return;
-
-        bool ok;
-        int lineNumber = QInputDialog::getInt(this, "Go to Line", "Enter line number:", 1, 1, editor->document()->blockCount(), 1, &ok);
-        if (ok) {
-            QTextCursor cursor = editor->textCursor();
-            cursor.movePosition(QTextCursor::Start);
-            cursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, lineNumber - 1);
-            editor->setTextCursor(cursor);
-        }
-    }
-
-    // Common Edit Menu actions
-    void selectAll() { getCurrentEditor()->selectAll(); }
-    void copy() { getCurrentEditor()->copy(); }
-    void cut() { getCurrentEditor()->cut(); }
-    void paste() { getCurrentEditor()->paste(); }
-    void undo() { getCurrentEditor()->undo(); }
-    void redo() { getCurrentEditor()->redo(); }
-
     QPlainTextEdit* getCurrentEditor() {
         QWidget *currentTab = tabWidget->currentWidget();
-        return currentTab ? currentTab->findChild<QPlainTextEdit *>() : nullptr;
+        return currentTab ? qobject_cast<QPlainTextEdit *>(currentTab) : nullptr;
     }
- void findText() {
-    QWidget *currentTab = tabWidget->currentWidget();
-    if (!currentTab) return;
-
-    QPlainTextEdit *editor = currentTab->findChild<QPlainTextEdit *>();
-    if (!editor) return;
-
-    bool ok;
-    QString searchText = QInputDialog::getText(this, "Find", "Enter text to find:", QLineEdit::Normal, "", &ok);
-    
-    if (ok && !searchText.isEmpty()) {
-        if (!editor->find(searchText)) {
-            QMessageBox::information(this, "Find", "Text not found.");
-        }
-    }
-}
-
-void replaceText() {
-    QWidget *currentTab = tabWidget->currentWidget();
-    if (!currentTab) return;
-
-    QPlainTextEdit *editor = currentTab->findChild<QPlainTextEdit *>();
-    if (!editor) return;
-
-    bool ok;
-    QString searchText = QInputDialog::getText(this, "Find", "Enter text to find:", QLineEdit::Normal, "", &ok);
-    if (!ok || searchText.isEmpty()) return;
-
-    QString replaceText = QInputDialog::getText(this, "Replace", "Enter replacement text:", QLineEdit::Normal, "", &ok);
-    if (!ok) return;
-
-    QString content = editor->toPlainText();
-    content.replace(searchText, replaceText);
-    editor->setPlainText(content);
-}
-   
 };
 
-
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
     TextEditor window;
     window.show();
