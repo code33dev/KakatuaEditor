@@ -28,6 +28,103 @@
 #include <QMessageBox>
 #include <QRegularExpression>
 #include <QTextDocument>
+#include <QFontDialog>
+
+class ReplaceWindow : public QWidget {
+
+public:
+    explicit ReplaceWindow(QPlainTextEdit *editor, QWidget *parent = nullptr)
+        : QWidget(parent), textEditor(editor) {
+        setWindowTitle("Replace");
+        setWindowFlags(Qt::Window | Qt::WindowStaysOnTopHint); // Independent Window
+
+        QLabel *replaceLabel = new QLabel("Replace:");
+        replaceBox = new QLineEdit(this);
+
+        QLabel *replaceWithLabel = new QLabel("With:");
+        replaceWithBox = new QLineEdit(this);
+
+        replaceButton = new QPushButton("Replace", this);
+        replaceAllButton = new QPushButton("Replace All", this);
+
+        caseCheckBox = new QCheckBox("Match Case", this);
+        regexCheckBox = new QCheckBox("Use Regular Expression", this);
+
+        QHBoxLayout *replaceLayout = new QHBoxLayout();
+        replaceLayout->addWidget(replaceLabel);
+        replaceLayout->addWidget(replaceBox);
+
+        QHBoxLayout *replaceWithLayout = new QHBoxLayout();
+        replaceWithLayout->addWidget(replaceWithLabel);
+        replaceWithLayout->addWidget(replaceWithBox);
+
+        QHBoxLayout *buttonLayout = new QHBoxLayout();
+        buttonLayout->addWidget(replaceButton);
+        buttonLayout->addWidget(replaceAllButton);
+
+        QVBoxLayout *mainLayout = new QVBoxLayout();
+        mainLayout->addLayout(replaceLayout);
+        mainLayout->addLayout(replaceWithLayout);
+        mainLayout->addLayout(buttonLayout);
+        mainLayout->addWidget(caseCheckBox);
+        mainLayout->addWidget(regexCheckBox);
+
+        setLayout(mainLayout);
+
+        connect(replaceButton, &QPushButton::clicked, this, &ReplaceWindow::replaceText);
+        connect(replaceAllButton, &QPushButton::clicked, this, &ReplaceWindow::replaceAllText);
+    }
+
+protected:
+    void closeEvent(QCloseEvent *event) override {
+        delete this; // Destroy window on close
+    }
+
+private slots:
+    void replaceText() {
+        if (!textEditor) return;
+
+        QTextCursor cursor = textEditor->textCursor();
+        if (!cursor.hasSelection()) {
+            QMessageBox::warning(this, "Replace", "No text selected.");
+            return;
+        }
+
+        QString replaceStr = replaceWithBox->text();
+        cursor.insertText(replaceStr);
+    }
+
+    void replaceAllText() {
+        if (!textEditor) return;
+
+        QString searchText = replaceBox->text();
+        QString replaceText = replaceWithBox->text();
+        if (searchText.isEmpty()) return;
+
+        QTextDocument *doc = textEditor->document();
+        QTextCursor cursor(doc);
+        cursor.beginEditBlock();
+
+        QTextDocument::FindFlags flags;
+        if (caseCheckBox->isChecked()) flags |= QTextDocument::FindCaseSensitively;
+
+        while (!cursor.isNull() && !cursor.atEnd()) {
+            cursor = doc->find(searchText, cursor, flags);
+            if (!cursor.isNull()) {
+                cursor.insertText(replaceText);
+            }
+        }
+
+        cursor.endEditBlock();
+    }
+
+private:
+    QLineEdit *replaceBox;
+    QLineEdit *replaceWithBox;
+    QPushButton *replaceButton, *replaceAllButton;
+    QCheckBox *caseCheckBox, *regexCheckBox;
+    QPlainTextEdit *textEditor;
+};
 
 class FindWindow : public QWidget
 {
@@ -64,9 +161,10 @@ public:
 
         setLayout(mainLayout);
 
- connect(nextButton, &QPushButton::clicked, this, &FindWindow::findNext);
+        connect(nextButton, &QPushButton::clicked, this, &FindWindow::findNext);
         connect(prevButton, &QPushButton::clicked, this, &FindWindow::findPrevious);
-        connect(highlightButton, &QPushButton::clicked, this, &FindWindow::highlightAllMatches);    }
+        connect(highlightButton, &QPushButton::clicked, this, &FindWindow::highlightAllMatches);
+    }
 
 private slots:
     void findNext()
@@ -247,7 +345,17 @@ private:
     QFileSystemModel *fileModel;
     QTabWidget *tabWidget;
     QMap<QString, QPlainTextEdit *> openTabs;
-    
+
+    void replaceWithWindow()
+    {
+        QPlainTextEdit *editor = getCurrentEditor();
+        if (!editor)
+            return;
+
+        ReplaceWindow *replaceWindow = new ReplaceWindow(editor);
+        replaceWindow->show();
+    }
+
     void findWithWindow()
     {
         QPlainTextEdit *editor = getCurrentEditor();
@@ -271,6 +379,7 @@ private:
 
         // **Edit Menu**
         QMenu *editMenu = menuBar->addMenu("&Edit");
+        editMenu->addAction("Change Font", this, &TextEditor::changeFont);
         editMenu->addAction("Undo", QKeySequence::Undo, this, &TextEditor::undo);
         editMenu->addAction("Redo", QKeySequence::Redo, this, &TextEditor::redo);
         editMenu->addSeparator();
@@ -281,7 +390,7 @@ private:
         editMenu->addSeparator();
         // editMenu->addAction("Find", QKeySequence::Find, this, &TextEditor::findText);
         editMenu->addAction("Find", QKeySequence::Find, this, &TextEditor::findWithWindow);
-        editMenu->addAction("Replace", QKeySequence::Replace, this, &TextEditor::replaceText);
+        editMenu->addAction("Replace", QKeySequence::Replace, this, &TextEditor::replaceWithWindow);
         editMenu->addSeparator();
         editMenu->addAction("Find in Files", QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_F), this, &TextEditor::findInFiles);
         editMenu->addAction("Replace in Files", QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_H), this, &TextEditor::replaceInFiles);
@@ -290,7 +399,18 @@ private:
 
         setMenuBar(menuBar);
     }
-
+    void changeFont()
+    {
+        bool ok;
+        QFont font = QFontDialog::getFont(&ok, QFont("Consolas", 12), this, "Choose Font");
+        if (ok)
+        {
+            for (auto editor : openTabs.values())
+            {
+                editor->setFont(font);
+            }
+        }
+    }
     void openFolder()
     {
         QString dir = QFileDialog::getExistingDirectory(this, "Select Folder");
@@ -341,6 +461,14 @@ private:
         editor->setLineWrapMode(QPlainTextEdit::NoWrap);
         new SyntaxHighlighter(editor->document()); // Apply syntax highlighting
         file.close();
+
+        QPalette palette = editor->palette();
+        palette.setColor(QPalette::Base, QColor("#1E1E1E")); // Dark background
+        palette.setColor(QPalette::Text, QColor("#D4D4D4")); // Light gray text
+        editor->setPalette(palette);
+
+        QFont font("Consolas", 12);
+        editor->setFont(font);
 
         int tabIndex = tabWidget->addTab(editor, QFileInfo(filePath).fileName());
         tabWidget->setTabToolTip(tabIndex, filePath);
@@ -541,6 +669,12 @@ private:
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+    QFile file("darktheme.qss");
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        QString styleSheet = file.readAll();
+        app.setStyleSheet(styleSheet);
+    }
     TextEditor window;
     window.show();
     return app.exec();
