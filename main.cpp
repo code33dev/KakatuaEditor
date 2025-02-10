@@ -17,6 +17,146 @@
 #include <QSplitter>
 #include <QVBoxLayout>
 #include <QTabWidget>
+#include <QDialog>
+#include <QLabel>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QCheckBox>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QTextCursor>
+#include <QMessageBox>
+#include <QRegularExpression>
+#include <QTextDocument>
+
+class FindDialog : public QDialog
+{
+
+public:
+    explicit FindDialog(QPlainTextEdit *editor, QWidget *parent = nullptr)
+        : QDialog(parent), textEditor(editor), lastMatchPos(0)
+    {
+        setWindowTitle("Find");
+
+        QLabel *label = new QLabel("Find:");
+        searchBox = new QLineEdit(this);
+
+        nextButton = new QPushButton("Next", this);
+        prevButton = new QPushButton("Previous", this);
+        highlightButton = new QPushButton("Highlight All", this);
+        caseCheckBox = new QCheckBox("Match Case", this);
+        regexCheckBox = new QCheckBox("Use Regular Expression", this);
+
+        QHBoxLayout *topLayout = new QHBoxLayout();
+        topLayout->addWidget(label);
+        topLayout->addWidget(searchBox);
+
+        QHBoxLayout *buttonLayout = new QHBoxLayout();
+        buttonLayout->addWidget(prevButton);
+        buttonLayout->addWidget(nextButton);
+        buttonLayout->addWidget(highlightButton);
+
+        QVBoxLayout *mainLayout = new QVBoxLayout();
+        mainLayout->addLayout(topLayout);
+        mainLayout->addLayout(buttonLayout);
+        mainLayout->addWidget(caseCheckBox);
+        mainLayout->addWidget(regexCheckBox);
+
+        setLayout(mainLayout);
+
+        connect(nextButton, &QPushButton::clicked, this, &FindDialog::findNext);
+        connect(prevButton, &QPushButton::clicked, this, &FindDialog::findPrevious);
+        connect(highlightButton, &QPushButton::clicked, this, &FindDialog::highlightAllMatches);
+    }
+
+private slots:
+    void findNext()
+    {
+        search(QTextDocument::FindFlags()); // Use correct FindFlags
+    }
+
+    void findPrevious()
+    {
+        search(QTextDocument::FindBackward);
+    }
+
+    void highlightAllMatches()
+    {
+        if (!textEditor)
+            return;
+
+        QTextCursor cursor = textEditor->textCursor();
+        QTextDocument *document = textEditor->document();
+        QTextCharFormat highlightFormat;
+        highlightFormat.setBackground(Qt::yellow);
+
+        QTextCursor highlightCursor(document);
+        highlightCursor.beginEditBlock();
+
+        QTextCharFormat defaultFormat;
+        defaultFormat.setBackground(Qt::transparent);
+
+        // Clear previous highlights
+        highlightCursor.select(QTextCursor::Document);
+        highlightCursor.setCharFormat(defaultFormat);
+
+        QString searchText = searchBox->text();
+        if (searchText.isEmpty())
+            return;
+
+        QTextDocument::FindFlags flags;
+        if (caseCheckBox->isChecked())
+            flags |= QTextDocument::FindCaseSensitively;
+        if (regexCheckBox->isChecked())
+            searchText = QRegularExpression(searchText).pattern();
+
+        while (!highlightCursor.isNull() && !highlightCursor.atEnd())
+        {
+            highlightCursor = document->find(searchText, highlightCursor, flags);
+            if (!highlightCursor.isNull())
+            {
+                highlightCursor.mergeCharFormat(highlightFormat);
+            }
+        }
+
+        highlightCursor.endEditBlock();
+    }
+
+private:
+    QLineEdit *searchBox;
+    QPushButton *nextButton, *prevButton, *highlightButton;
+    QCheckBox *caseCheckBox, *regexCheckBox;
+    QPlainTextEdit *textEditor;
+    int lastMatchPos;
+
+    void search(QTextDocument::FindFlags flags)
+    {
+        if (!textEditor)
+            return;
+
+        QString searchText = searchBox->text();
+        if (searchText.isEmpty())
+            return;
+
+        if (caseCheckBox->isChecked())
+            flags |= QTextDocument::FindCaseSensitively;
+        if (regexCheckBox->isChecked())
+            searchText = QRegularExpression(searchText).pattern();
+
+        QTextCursor cursor = textEditor->textCursor();
+        cursor = textEditor->document()->find(searchText, cursor, flags);
+
+        if (!cursor.isNull())
+        {
+            textEditor->setTextCursor(cursor);
+            lastMatchPos = cursor.position();
+        }
+        else
+        {
+            QMessageBox::information(this, "Find", "No more matches found.");
+        }
+    }
+};
 
 class SyntaxHighlighter : public QSyntaxHighlighter
 {
@@ -108,7 +248,16 @@ private:
     QFileSystemModel *fileModel;
     QTabWidget *tabWidget;
     QMap<QString, QPlainTextEdit *> openTabs;
+    
+    void findWithDialog()
+    {
+        QPlainTextEdit *editor = getCurrentEditor();
+        if (!editor)
+            return;
 
+        FindDialog *dialog = new FindDialog(editor, this);
+        dialog->exec();
+    }
     void createMenuBar()
     {
         QMenuBar *menuBar = new QMenuBar(this);
@@ -131,7 +280,8 @@ private:
         editMenu->addAction("Paste", QKeySequence::Paste, this, &TextEditor::paste);
         editMenu->addAction("Select All", QKeySequence::SelectAll, this, &TextEditor::selectAll);
         editMenu->addSeparator();
-        editMenu->addAction("Find", QKeySequence::Find, this, &TextEditor::findText);
+        //editMenu->addAction("Find", QKeySequence::Find, this, &TextEditor::findText);
+        editMenu->addAction("Find", QKeySequence::Find, this, &TextEditor::findWithDialog);
         editMenu->addAction("Replace", QKeySequence::Replace, this, &TextEditor::replaceText);
         editMenu->addSeparator();
         editMenu->addAction("Find in Files", QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_F), this, &TextEditor::findInFiles);
