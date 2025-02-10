@@ -92,12 +92,20 @@ private slots:
         QTextCursor cursor = textEditor->textCursor();
         if (!cursor.hasSelection())
         {
-            QMessageBox::warning(this, "Replace", "No text selected.");
-            return;
-        }
+            cursor = textEditor->document()->find(replaceBox->text(), cursor);
+            textEditor->setTextCursor(cursor);
 
-        QString replaceStr = replaceWithBox->text();
-        cursor.insertText(replaceStr);
+            //            QMessageBox::warning(this, "Replace", "No text selected.");
+            // return;
+        }
+        if (cursor.hasSelection())
+        {
+            cursor.insertText(replaceWithBox->text()); // 🟢 Apply replacement
+        }
+        textEditor->update();
+        textEditor->repaint();
+        // QString replaceStr = replaceWithBox->text();
+        // cursor.insertText(replaceStr);
     }
 
     void replaceAllText()
@@ -112,22 +120,35 @@ private slots:
 
         QTextDocument *doc = textEditor->document();
         QTextCursor cursor(doc);
-        cursor.beginEditBlock();
+        cursor.beginEditBlock(); // 🟢 Start edit block
 
         QTextDocument::FindFlags flags;
         if (caseCheckBox->isChecked())
             flags |= QTextDocument::FindCaseSensitively;
 
+        bool replaced = false;
+
+        // 🔄 Loop through all occurrences and replace them
         while (!cursor.isNull() && !cursor.atEnd())
         {
             cursor = doc->find(searchText, cursor, flags);
             if (!cursor.isNull())
             {
                 cursor.insertText(replaceText);
+                replaced = true;
             }
         }
 
-        cursor.endEditBlock();
+        cursor.endEditBlock();             // 🔴 Ensure changes apply immediately
+        textEditor->setTextCursor(cursor); // 🟢 Force cursor update
+
+        // 🚨 Notify the user if no matches were replaced
+        if (!replaced)
+        {
+            QMessageBox::information(this, "Replace All", "No matches found.");
+        }
+        textEditor->update();
+        textEditor->repaint();
     }
 
 private:
