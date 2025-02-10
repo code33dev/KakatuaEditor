@@ -115,6 +115,36 @@ private:
         editMenu->addAction("Replace in Files",QKeySequence(Qt::CTRL|Qt::SHIFT|Qt::Key_H) , this, &TextEditor::replaceInFiles);
         editMenu->addAction("Go to line", QKeySequence(Qt::CTRL | Qt::Key_F12), this, &TextEditor::goToLine);
 
+        QMenu *settingsMenu = menuBar->addMenu("&Settings");
+        settingsMenu->addAction("Select All", QKeySequence::SelectAll, editor, &QPlainTextEdit::selectAll);
+        settingsMenu->addAction("Copy", QKeySequence::Copy, editor, &QPlainTextEdit::copy);
+        settingsMenu->addAction("Cut", QKeySequence::Cut, editor, &QPlainTextEdit::cut);
+        settingsMenu->addAction("Paste", QKeySequence::Paste, editor, &QPlainTextEdit::paste);
+        settingsMenu->addSeparator();
+        settingsMenu->addAction("Undo", QKeySequence::Undo, editor, &QPlainTextEdit::undo);
+        settingsMenu->addAction("Redo", QKeySequence::Redo, editor, &QPlainTextEdit::redo);
+        settingsMenu->addSeparator();
+        settingsMenu->addAction("Find", QKeySequence::Find, this, &TextEditor::findText);
+        settingsMenu->addAction("Replace", QKeySequence::Replace, this, &TextEditor::replaceText);
+        settingsMenu->addAction("Find in Files", QKeySequence(Qt::CTRL|Qt::SHIFT|Qt::Key_F), this, &TextEditor::findInFiles);
+        settingsMenu->addAction("Replace in Files",QKeySequence(Qt::CTRL|Qt::SHIFT|Qt::Key_H) , this, &TextEditor::replaceInFiles);
+        settingsMenu->addAction("Go to line", QKeySequence(Qt::CTRL | Qt::Key_F12), this, &TextEditor::goToLine);
+
+        QMenu *systemDTEngineMenu = menuBar->addMenu("&DTEngine");
+        systemDTEngineMenu->addAction("Select All", QKeySequence::SelectAll, editor, &QPlainTextEdit::selectAll);
+        systemDTEngineMenu->addAction("Copy", QKeySequence::Copy, editor, &QPlainTextEdit::copy);
+        systemDTEngineMenu->addAction("Cut", QKeySequence::Cut, editor, &QPlainTextEdit::cut);
+        systemDTEngineMenu->addAction("Paste", QKeySequence::Paste, editor, &QPlainTextEdit::paste);
+        systemDTEngineMenu->addSeparator();
+        systemDTEngineMenu->addAction("Undo", QKeySequence::Undo, editor, &QPlainTextEdit::undo);
+        systemDTEngineMenu->addAction("Redo", QKeySequence::Redo, editor, &QPlainTextEdit::redo);
+        systemDTEngineMenu->addSeparator();
+        systemDTEngineMenu->addAction("Find", QKeySequence::Find, this, &TextEditor::findText);
+        systemDTEngineMenu->addAction("Replace", QKeySequence::Replace, this, &TextEditor::replaceText);
+        systemDTEngineMenu->addAction("Find in Files", QKeySequence(Qt::CTRL|Qt::SHIFT|Qt::Key_F), this, &TextEditor::findInFiles);
+        systemDTEngineMenu->addAction("Replace in Files",QKeySequence(Qt::CTRL|Qt::SHIFT|Qt::Key_H) , this, &TextEditor::replaceInFiles);
+        systemDTEngineMenu->addAction("Go to line", QKeySequence(Qt::CTRL | Qt::Key_F12), this, &TextEditor::goToLine);
+
         setMenuBar(menuBar);
     }
 
