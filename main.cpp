@@ -29,12 +29,12 @@
 #include <QRegularExpression>
 #include <QTextDocument>
 
-class FindDialog : public QDialog
+class FindWindow : public QWidget
 {
 
 public:
-    explicit FindDialog(QPlainTextEdit *editor, QWidget *parent = nullptr)
-        : QDialog(parent), textEditor(editor), lastMatchPos(0)
+    explicit FindWindow(QPlainTextEdit *editor, QWidget *parent = nullptr)
+        : QWidget(parent), textEditor(editor)
     {
         setWindowTitle("Find");
 
@@ -64,10 +64,9 @@ public:
 
         setLayout(mainLayout);
 
-        connect(nextButton, &QPushButton::clicked, this, &FindDialog::findNext);
-        connect(prevButton, &QPushButton::clicked, this, &FindDialog::findPrevious);
-        connect(highlightButton, &QPushButton::clicked, this, &FindDialog::highlightAllMatches);
-    }
+ connect(nextButton, &QPushButton::clicked, this, &FindWindow::findNext);
+        connect(prevButton, &QPushButton::clicked, this, &FindWindow::findPrevious);
+        connect(highlightButton, &QPushButton::clicked, this, &FindWindow::highlightAllMatches);    }
 
 private slots:
     void findNext()
@@ -249,14 +248,14 @@ private:
     QTabWidget *tabWidget;
     QMap<QString, QPlainTextEdit *> openTabs;
     
-    void findWithDialog()
+    void findWithWindow()
     {
         QPlainTextEdit *editor = getCurrentEditor();
         if (!editor)
             return;
 
-        FindDialog *dialog = new FindDialog(editor, this);
-        dialog->exec();
+        FindWindow *findWindow = new FindWindow(editor);
+        findWindow->show();
     }
     void createMenuBar()
     {
@@ -280,8 +279,8 @@ private:
         editMenu->addAction("Paste", QKeySequence::Paste, this, &TextEditor::paste);
         editMenu->addAction("Select All", QKeySequence::SelectAll, this, &TextEditor::selectAll);
         editMenu->addSeparator();
-        //editMenu->addAction("Find", QKeySequence::Find, this, &TextEditor::findText);
-        editMenu->addAction("Find", QKeySequence::Find, this, &TextEditor::findWithDialog);
+        // editMenu->addAction("Find", QKeySequence::Find, this, &TextEditor::findText);
+        editMenu->addAction("Find", QKeySequence::Find, this, &TextEditor::findWithWindow);
         editMenu->addAction("Replace", QKeySequence::Replace, this, &TextEditor::replaceText);
         editMenu->addSeparator();
         editMenu->addAction("Find in Files", QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_F), this, &TextEditor::findInFiles);
