@@ -316,7 +316,7 @@ public:
     SyntaxHighlighter(QTextDocument *parent) : QSyntaxHighlighter(parent)
     {
         QTextCharFormat keywordFormat;
-        keywordFormat.setForeground(Qt::blue);
+        keywordFormat.setForeground(Qt::yellow);
         keywordFormat.setFontWeight(QFont::Bold);
         QStringList keywordPatterns = {
             "\\bint\\b", "\\bdouble\\b", "\\bfloat\\b", "\\bchar\\b",
@@ -326,10 +326,10 @@ public:
 
         QTextCharFormat commentFormat;
         commentFormat.setForeground(Qt::darkGreen);
-        commentFormat.setFontItalic(true);
+        commentFormat.setFontItalic(false);
 
         QTextCharFormat stringFormat;
-        stringFormat.setForeground(Qt::darkRed);
+        stringFormat.setForeground(Qt::white);
 
         for (const QString &pattern : keywordPatterns)
             rules.append({QRegularExpression(pattern), keywordFormat});
