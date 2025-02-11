@@ -201,7 +201,7 @@ void TextEditor::openFolder()
 
 void TextEditor::openFile()
 {
-    QString filePath = QFileDialog::getOpenFileName(this, "Open File", "", "Text Files (*.txt *.cpp *.h);;All Files (*)");
+    QString filePath = QFileDialog::getOpenFileName(this, "Open File", "", "Text Files (*.txt *.cpp *.h);; PL/1 PL/X (*.pl1 *.plx, *.copy, *.macro);;All Files (*)");
     if (!filePath.isEmpty())
     {
         openFileInTab(filePath);

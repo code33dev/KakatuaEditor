@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "callback": "cpp",
-        "image": "cpp"
+        "image": "cpp",
+        "program": "cpp"
     }
 }
