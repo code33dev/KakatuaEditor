@@ -8,7 +8,7 @@
 #include "ReplaceWindow.hpp"
 #include "FindInFilesWindow.hpp"
 #include "ReplaceInFilesWindow.hpp"
-
+#include "ProcedureTreeWindow.hpp"
 class TextEditor : public QMainWindow
 {
     Q_OBJECT
@@ -47,8 +47,7 @@ private slots:
     void toggleVerticalLine();                     // Enable/Disable the vertical line
     void setVerticalLineColumn();                  // Set column for the vertical line
     void drawVerticalLine(QPlainTextEdit *editor); // Draw the vertical line
-    
-    
+    void updateProcedureTree();
 
 private:
     QTreeView *explorer;
@@ -61,6 +60,7 @@ private:
     bool verticalLineEnabled = false; // Stores ON/OFF state
     int verticalLineColumn = 80;      // Default column for the vertical line
     QAction *toggleLineAction;        // Action for toggling the vertical line
+    ProcedureTreeWindow *procedureTree;
 };
 
 #endif // TEXTEDITOR_HPP

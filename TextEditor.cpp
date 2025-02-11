@@ -2,7 +2,7 @@
 
 TextEditor::TextEditor()
 {
-    setWindowTitle("PLX Editor -> Debug Tool Edition =D");
+    setWindowTitle("PLX Editor|Debug Tool Edition|Developed by: Alberto Huerta Luna|C++20|QT6");
     resize(1000, 600);
 
     // File Explorer
@@ -72,9 +72,14 @@ void TextEditor::createMenuBar()
     statusBar->addPermanentWidget(positionLabel);
     setStatusBar(statusBar);
 
+    procedureTree = new ProcedureTreeWindow();  // ✅ Create the procedure tree window
+    procedureTree->show();  // ✅ Show the window at startup
+
     // Monitor cursor movement
     connect(tabWidget, &QTabWidget::currentChanged, this, &TextEditor::updateStatusBar);
     connect(qApp, &QApplication::focusChanged, this, &TextEditor::updateCapsLockStatus);
+    connect(tabWidget, &QTabWidget::currentChanged, this, &TextEditor::updateProcedureTree);
+
 }
 void TextEditor::drawVerticalLine(QPlainTextEdit *editor)
 {
@@ -447,4 +452,15 @@ void TextEditor::replaceInFiles()
     }
 
     QMessageBox::information(this, "Replace in Files", QString("Replaced in %1 file(s).").arg(replacedCount));
+}
+
+void TextEditor::updateProcedureTree()
+{
+ QPlainTextEdit *editor = qobject_cast<QPlainTextEdit *>(tabWidget->currentWidget());
+    if (!editor)
+        return;
+
+    QString code = editor->toPlainText();
+    QString fileName = editor->property("filePath").toString();
+    procedureTree->updateProcedures(code, fileName);
 }

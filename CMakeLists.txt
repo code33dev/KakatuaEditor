@@ -23,6 +23,7 @@ set(SOURCES
     FindInFilesWindow.cpp
     ReplaceInFilesWindow.cpp
     CodeEditor.cpp
+    ProcedureTreeWindow.cpp
 )
 
 # Gather header files
@@ -34,6 +35,7 @@ set(HEADERS
     FindInFilesWindow.hpp
     ReplaceInFilesWindow.hpp
     CodeEditor.hpp
+    ProcedureTreeWindow.hpp
 )
 
 # Add the executable
