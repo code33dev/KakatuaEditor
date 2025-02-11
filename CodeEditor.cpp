@@ -1,6 +1,41 @@
 #include "CodeEditor.hpp"
 
-CodeEditor::CodeEditor(QWidget *parent) : QPlainTextEdit(parent) {}
+CodeEditor::CodeEditor(QWidget *parent) : QPlainTextEdit(parent)
+{
+    // ✅ Set a black background
+    QPalette p = palette();
+    p.setColor(QPalette::Base, QColor("#000000")); // Black background
+    p.setColor(QPalette::Text, QColor("#FFFFFF")); // White text
+    setPalette(p);
+    setStyleSheet("QPlainTextEdit { background-color: #000000; color: #FFFFFF; }");
+
+    // ✅ Connect cursor movement to highlight the current line
+    connect(this, &QPlainTextEdit::cursorPositionChanged, this, &CodeEditor::highlightCurrentLine);
+
+    highlightCurrentLine(); // Apply highlight immediately
+    connect(this, &QPlainTextEdit::cursorPositionChanged, this, &CodeEditor::highlightCurrentLine);
+    highlightCurrentLine(); // Apply highlight immediately
+}
+
+void CodeEditor::highlightCurrentLine()
+{
+    QList<QTextEdit::ExtraSelection> extraSelections;
+
+    if (!isReadOnly()) // ✅ Only highlight if editor is editable
+    {
+        QTextEdit::ExtraSelection selection;
+        QColor lineColor = QColor(50, 50, 50, 100); // ✅ Dark gray highlight
+
+        selection.format.setBackground(lineColor);
+        selection.format.setProperty(QTextFormat::FullWidthSelection, true);
+        selection.cursor = textCursor();
+        selection.cursor.clearSelection(); // ✅ Apply the highlight to the entire line
+
+        extraSelections.append(selection);
+    }
+
+    setExtraSelections(extraSelections);
+}
 
 void CodeEditor::setVerticalLineEnabled(bool enabled)
 {
@@ -10,13 +45,17 @@ void CodeEditor::setVerticalLineEnabled(bool enabled)
 
 void CodeEditor::setVerticalLineColumn(int column)
 {
-    verticalLineColumn = column;
-    viewport()->update(); // Force repaint
+    if (column >= 0) // Ensure valid column
+    {
+        verticalLineColumn = column;
+        calculateVerticalLineX();  // ✅ Recalculate the X position
+        viewport()->update();  // ✅ Force repaint
+    }
 }
 
 void CodeEditor::paintEvent(QPaintEvent *event)
 {
-    QPlainTextEdit::paintEvent(event);
+     QPlainTextEdit::paintEvent(event);
 
     if (!verticalLineEnabled)
         return;
@@ -24,26 +63,29 @@ void CodeEditor::paintEvent(QPaintEvent *event)
     QPainter painter(viewport());
     painter.setPen(QColor(Qt::red));
 
-    // ✅ Get the actual font used in the editor
-    QFont editorFont = this->font();
+    // ✅ Adjust for scrolling
+    int xPos = verticalLineX;// - contentOffset().x();
 
-    // ✅ Get the font size
-    int fontSize = editorFont.pointSize();
-
-    // ✅ Get the font metrics based on the editor's font size
-    QFontMetrics fm(editorFont);
-
-    // ✅ Get the width of a single character considering font size
-    int charWidth = fm.horizontalAdvance('M');
-
-    // ✅ Calculate the X position based on the column, font size, and scrolling
-    int xPos = (verticalLineColumn * charWidth) - contentOffset().x() + document()->documentMargin();
-
-    // ✅ Draw the vertical line precisely at the correct column
+    // ✅ Draw the vertical line in the same position for all lines
     painter.drawLine(xPos, 0, xPos, viewport()->height());
 }
+void CodeEditor::calculateVerticalLineX()
+{
+    QFontMetrics fm(this->font());
+    
+    std::string charOffset = "";
+    for(int i = 0; i < verticalLineColumn-1; i++)
+    {
+        charOffset.push_back(' ');
+    }
+    QString offset(charOffset.c_str());
+    int charWidth = fm.horizontalAdvance(offset); // ✅ Only count spaces (' ')
+    // ✅ Calculate the exact position based on N white spaces
+    verticalLineX = charWidth;
+}
+
 void CodeEditor::setFont(const QFont &font)
 {
-    QPlainTextEdit::setFont(font);  // ✅ Apply new font to editor
-    viewport()->update();  // ✅ Force a repaint to realign the vertical line
+    QPlainTextEdit::setFont(font); // ✅ Apply new font to editor
+    viewport()->update();          // ✅ Force a repaint to realign the vertical line
 }

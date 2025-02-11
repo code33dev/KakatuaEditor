@@ -33,5 +33,5 @@
 #include <QStatusBar>  // Added for status bar
 #include <QPainter>
 #include <QPaintEvent>
-
+#include <QScrollBar>
 

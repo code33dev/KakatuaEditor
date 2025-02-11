@@ -4,6 +4,7 @@
 #include <QPlainTextEdit>
 #include <QPainter>
 #include <QPaintEvent>
+#include <QTextBlock>
 
 class CodeEditor : public QPlainTextEdit
 {
@@ -14,6 +15,9 @@ public:
     void setVerticalLineEnabled(bool enabled);
     void setVerticalLineColumn(int column);
     void setFont(const QFont &font);
+    void highlightCurrentLine();
+    void calculateVerticalLineX();
+
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -21,6 +25,7 @@ protected:
 private:
     bool verticalLineEnabled = false;
     int verticalLineColumn = 80;
+    int verticalLineX = 80;
 };
 
 #endif // CODEEDITOR_HPP
