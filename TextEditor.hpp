@@ -19,7 +19,7 @@ private slots:
     void openFolder();
     void openFile();
     void openFileFromExplorer(const QModelIndex &index);
-    //void openFileInTab(const QString &filePath);
+    // void openFileInTab(const QString &filePath);
     void saveCurrentFile();
     void closeTab(int index);
     void undo();
@@ -41,11 +41,16 @@ private slots:
     void createMenuBar();
     QPlainTextEdit *getCurrentEditor();
     void openFileInTab(const QString &filePath);
+    void updateStatusBar();      // Updates Caps Lock, Line, and Column
+    void updateCapsLockStatus(); // Checks if Caps Lock is on
 private:
     QTreeView *explorer;
     QFileSystemModel *fileModel;
     QTabWidget *tabWidget;
     QMap<QString, QPlainTextEdit *> openTabs;
+    QStatusBar *statusBar; // Status bar widget
+    QLabel *capsLockLabel; // Label to display Caps Lock status
+    QLabel *positionLabel; // Label to display current line and column
 };
 
 #endif // TEXTEDITOR_HPP

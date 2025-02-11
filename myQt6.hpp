@@ -30,4 +30,5 @@
 #include <QWidget>
 #include <QListWidget>
 #include <QDirIterator>
+#include <QStatusBar>  // Added for status bar
 
