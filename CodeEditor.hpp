@@ -13,6 +13,7 @@ public:
     explicit CodeEditor(QWidget *parent = nullptr);
     void setVerticalLineEnabled(bool enabled);
     void setVerticalLineColumn(int column);
+    void setFont(const QFont &font);
 
 protected:
     void paintEvent(QPaintEvent *event) override;
