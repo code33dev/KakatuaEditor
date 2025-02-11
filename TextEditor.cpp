@@ -2,7 +2,7 @@
 
 TextEditor::TextEditor()
 {
-    setWindowTitle("Qt6 Text Editor with Tabs & File Explorer");
+    setWindowTitle("PLX Editor -> Debug Tool Edition =D");
     resize(1000, 600);
 
     // File Explorer
@@ -60,6 +60,8 @@ void TextEditor::createMenuBar()
     editMenu->addAction("Replace in Files", QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_H), this, &TextEditor::replaceInFilesWithWindow);
     editMenu->addSeparator();
     editMenu->addAction("Go to Line", QKeySequence(Qt::CTRL | Qt::Key_F12), this, &TextEditor::goToLine);
+    toggleLineAction = editMenu->addAction("Enable Vertical Line", this, &TextEditor::toggleVerticalLine);
+    editMenu->addAction("Set Vertical Line Column", this, &TextEditor::setVerticalLineColumn);
 
     setMenuBar(menuBar);
 
@@ -73,6 +75,50 @@ void TextEditor::createMenuBar()
     // Monitor cursor movement
     connect(tabWidget, &QTabWidget::currentChanged, this, &TextEditor::updateStatusBar);
     connect(qApp, &QApplication::focusChanged, this, &TextEditor::updateCapsLockStatus);
+}
+void TextEditor::drawVerticalLine(QPlainTextEdit *editor)
+{
+    if (!verticalLineEnabled || !editor)
+        return;
+
+    QPainter painter(editor->viewport());
+    painter.setPen(QColor(Qt::red)); // Vertical line color
+
+    int charWidth = QFontMetrics(editor->font()).averageCharWidth();
+    int xPos = verticalLineColumn * charWidth;
+
+    painter.drawLine(xPos, 0, xPos, editor->viewport()->height());
+}
+
+
+void TextEditor::toggleVerticalLine()
+{
+    CodeEditor *editor = qobject_cast<CodeEditor *>(getCurrentEditor());
+    if (!editor)
+        return;
+
+    verticalLineEnabled = !verticalLineEnabled;
+    toggleLineAction->setText(verticalLineEnabled ? "Disable Vertical Line" : "Enable Vertical Line");
+
+    editor->setVerticalLineEnabled(verticalLineEnabled);
+    editor->viewport()->update(); // ✅ Force a repaint
+}
+
+void TextEditor::setVerticalLineColumn()
+{
+    CodeEditor *editor = qobject_cast<CodeEditor *>(getCurrentEditor());
+    if (!editor)
+        return;
+
+    bool ok;
+    int column = QInputDialog::getInt(this, "Set Vertical Line Column", "Enter column number:", 
+                                      verticalLineColumn, 1, 200, 1, &ok);
+    if (ok)
+    {
+        verticalLineColumn = column;
+        editor->setVerticalLineColumn(verticalLineColumn);
+        editor->viewport()->update(); // ✅ Force a repaint
+    }
 }
 void TextEditor::updateStatusBar()
 {
@@ -93,7 +139,7 @@ void TextEditor::updateStatusBar()
 }
 void TextEditor::updateCapsLockStatus()
 {
-    //bool capsOn = QApplication::keyboardModifiers() & Qt::ShiftModifier;
+    // bool capsOn = QApplication::keyboardModifiers() & Qt::ShiftModifier;
     bool capsOn = (QApplication::keyboardModifiers() & Qt::ShiftModifier) && (QGuiApplication::queryKeyboardModifiers() & Qt::ShiftModifier);
     capsLockLabel->setText(capsOn ? "Caps: ON" : "Caps: OFF");
     capsLockLabel->setText(capsOn ? "Caps: ON" : "Caps: OFF");
@@ -187,11 +233,16 @@ void TextEditor::openFileInTab(const QString &filePath)
     }
 
     QTextStream in(&file);
-    QPlainTextEdit *editor = new QPlainTextEdit();
+    // QPlainTextEdit *editor = new QPlainTextEdit();
+    // editor->setPlainText(in.readAll());
+    // editor->setProperty("filePath", filePath);
+    // editor->setLineWrapMode(QPlainTextEdit::NoWrap);
+    CodeEditor *editor = new CodeEditor();
     editor->setPlainText(in.readAll());
     editor->setProperty("filePath", filePath);
     editor->setLineWrapMode(QPlainTextEdit::NoWrap);
     new SyntaxHighlighter(editor->document()); // Apply syntax highlighting
+
     file.close();
 
     QPalette palette = editor->palette();
@@ -199,7 +250,7 @@ void TextEditor::openFileInTab(const QString &filePath)
     palette.setColor(QPalette::Text, QColor("#D4D4D4")); // Light gray text
     editor->setPalette(palette);
 
-    QFont font("Consolas", 12);
+    QFont font("Courier New", 16);
     editor->setFont(font);
 
     int tabIndex = tabWidget->addTab(editor, QFileInfo(filePath).fileName());
@@ -209,7 +260,6 @@ void TextEditor::openFileInTab(const QString &filePath)
     openTabs[filePath] = editor;
 
     connect(editor, &QPlainTextEdit::cursorPositionChanged, this, &TextEditor::updateStatusBar);
-
 }
 
 void TextEditor::saveCurrentFile()

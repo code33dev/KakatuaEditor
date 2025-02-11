@@ -2,6 +2,7 @@
 #define TEXTEDITOR_HPP
 
 #include "myQt6.hpp"
+#include "CodeEditor.hpp"
 #include "SyntaxHighlighter.hpp"
 #include "FindWindow.hpp"
 #include "ReplaceWindow.hpp"
@@ -41,16 +42,25 @@ private slots:
     void createMenuBar();
     QPlainTextEdit *getCurrentEditor();
     void openFileInTab(const QString &filePath);
-    void updateStatusBar();      // Updates Caps Lock, Line, and Column
-    void updateCapsLockStatus(); // Checks if Caps Lock is on
+    void updateStatusBar();                        // Updates Caps Lock, Line, and Column
+    void updateCapsLockStatus();                   // Checks if Caps Lock is on
+    void toggleVerticalLine();                     // Enable/Disable the vertical line
+    void setVerticalLineColumn();                  // Set column for the vertical line
+    void drawVerticalLine(QPlainTextEdit *editor); // Draw the vertical line
+    
+    
+
 private:
     QTreeView *explorer;
     QFileSystemModel *fileModel;
     QTabWidget *tabWidget;
     QMap<QString, QPlainTextEdit *> openTabs;
-    QStatusBar *statusBar; // Status bar widget
-    QLabel *capsLockLabel; // Label to display Caps Lock status
-    QLabel *positionLabel; // Label to display current line and column
+    QStatusBar *statusBar;            // Status bar widget
+    QLabel *capsLockLabel;            // Label to display Caps Lock status
+    QLabel *positionLabel;            // Label to display current line and column
+    bool verticalLineEnabled = false; // Stores ON/OFF state
+    int verticalLineColumn = 80;      // Default column for the vertical line
+    QAction *toggleLineAction;        // Action for toggling the vertical line
 };
 
 #endif // TEXTEDITOR_HPP
